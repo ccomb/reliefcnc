@@ -14,14 +14,17 @@ setup(name='reliefcnc',
       author_email='ccomb@gorfou.fr',
       url='',
       license='proprietary',
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      packages=find_packages(),
+      #packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
       install_requires=[
           # -*- Extra requirements: -*-
-          'pylibusb',
+          'setuptools',
+          'pycnic',
       ],
       entry_points="""
-      # -*- Entry points: -*-
+      [console_scripts]
+      shoot = reliefcnc.main:main
       """,
       )

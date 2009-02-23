@@ -1,9 +1,5 @@
 import sys
-import ctypes
-import time
-import subprocess
-from optparse import OptionParser
-from pycnic import
+from pycnic.pycnic import TinyCN
 
 class MusicPlayer(object):
     """music player with a stepper motor
@@ -19,11 +15,12 @@ class MusicPlayer(object):
     current_position = 0
     way = 1 # forward = 1, backward = -1
 
-    def __init__(self):
+    def __init__(self, debug=False):
         self.tiny = TinyCN(debug=debug)
         self.tiny.motor.res_x = 30
         self.tiny.tool.speed = 700
-        self.tiny.set_speed(tiny.tool.speed, tiny.motor.res_x)
+        #self.tiny.set_speed(self.tiny.tool.speed, self.tiny.motor.res_x)
+
     def reset(self):
         # return to zero
         self.tiny.move_var_x(0, 0, 400, 'up')
@@ -37,7 +34,7 @@ class MusicPlayer(object):
             speed = notfreqs[note]
         else:
             speed = note
-        tiny.set_speed(speed, tiny.motor.res_x)
+        self.tiny.set_speed(speed, self.tiny.motor.res_x)
         # set final position
         steps_to_move = self.way * speed * duration
         final_position = self.current_position + steps_to_move
@@ -51,70 +48,66 @@ class MusicPlayer(object):
             raise('range too large')
     
         self.current_position = final_position
-        tiny.move_const_x(final_position)
+        self.tiny.move_const_x(final_position)
 
-
-
-
-
-
-    # Also sprach Python
-    player = MusicPlayer()
-    player.play('C', 1)
-    player.play('G', 1)
-    player.play('C2', 1.7)
-    player.play('E2', 0.3)
-    player.play('D2#', 1)
-    player.play('C', 0.3)
-    player.play('C', 0.3, -1)
-    player.play('C', 0.3, -1)
-    player.play('C', 0.3, -1)
-    player.play('C', 0.3, -1)
-    player.play('C', 0.3, -1)
-    player.play('C', 0.3, -1)
-    player.play('C', 1, -1)
-
-    player.play('C', 1)
-    player.play('G', 1)
-    player.play('C2', 1.7)
-    player.play('D2#', 0.3)
-    player.play('E2', 1)
-    player.play('C', 0.3)
-    player.play('C', 0.3, -1)
-    player.play('C', 0.3, -1)
-    player.play('C', 0.3, -1)
-    player.play('C', 0.3, -1)
-    player.play('C', 0.3, -1)
-    player.play('C', 0.3, -1)
-    player.play('C', 1, -1)
-
-    player.play('C', 1)
-    player.play('G', 1)
-    player.play('C2', 1.7)
-    player.play('G2', 0.3)
-    player.play('A2', 2)
-
-
-    player.play('A2', 0.33, -1)
-    player.play('B3', 0.33)
-    player.play('C3', 1)
-    player.play('D3', 1)
-
-    player.play('E3', 0.5)
-    player.play('F3', 0.5)
-    player.play('G3', 1)
-
-    player.play('E3', 0.5)
-    player.play('C3', 0.5)
-    player.play('G2', 0.5)
-    player.play('E2', 0.5)
-
-    player.play('E3', 0.5)
-    player.play('F3', 0.5)
-    player.play('G3', 1)
-
-    player.play('A4', 1)
-    player.play('B4', 1)
-    player.play('C4', 2)
-
-    sys.exit()
+    def test(self):
+        # Also sprach Python
+        player = MusicPlayer()
+        player.play('C', 1)
+        player.play('G', 1)
+        player.play('C2', 1.7)
+        player.play('E2', 0.3)
+        player.play('D2#', 1)
+        player.play('C', 0.3)
+        player.play('C', 0.3, -1)
+        player.play('C', 0.3, -1)
+        player.play('C', 0.3, -1)
+        player.play('C', 0.3, -1)
+        player.play('C', 0.3, -1)
+        player.play('C', 0.3, -1)
+        player.play('C', 1, -1)
+    
+        player.play('C', 1)
+        player.play('G', 1)
+        player.play('C2', 1.7)
+        player.play('D2#', 0.3)
+        player.play('E2', 1)
+        player.play('C', 0.3)
+        player.play('C', 0.3, -1)
+        player.play('C', 0.3, -1)
+        player.play('C', 0.3, -1)
+        player.play('C', 0.3, -1)
+        player.play('C', 0.3, -1)
+        player.play('C', 0.3, -1)
+        player.play('C', 1, -1)
+    
+        player.play('C', 1)
+        player.play('G', 1)
+        player.play('C2', 1.7)
+        player.play('G2', 0.3)
+        player.play('A2', 2)
+    
+    
+        player.play('A2', 0.33, -1)
+        player.play('B3', 0.33)
+        player.play('C3', 1)
+        player.play('D3', 1)
+    
+        player.play('E3', 0.5)
+        player.play('F3', 0.5)
+        player.play('G3', 1)
+    
+        player.play('E3', 0.5)
+        player.play('C3', 0.5)
+        player.play('G2', 0.5)
+        player.play('E2', 0.5)
+    
+        player.play('E3', 0.5)
+        player.play('F3', 0.5)
+        player.play('G3', 1)
+    
+        player.play('A4', 1)
+        player.play('B4', 1)
+        player.play('C4', 2)
+    
+        sys.exit()

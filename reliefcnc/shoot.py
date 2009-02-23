@@ -1,12 +1,7 @@
 # coding: utf-8
-from optparse import OptionParser
-from pycnic import
-import ctypes
 import subprocess
-import sys
 import time
-import time
-
+from pycnic.pycnic import TinyCN
 
 class ReliefShooter(object):
 
@@ -18,17 +13,6 @@ class ReliefShooter(object):
         self.tiny.motor.res_y = 200
         self.tiny.motor.res_z = 200
 
-        # misc tests and inits
-        self.tiny.set_prompt(0)
-        self.tiny.read_name()
-        self.tiny.set_fifo_depth(255) # 255 pulses
-        self.tiny.set_pulse_width(64) # 5µs (?)
-        res = self.tiny.get_speed_calc()
-        self.tiny.tool.numerateur = ByteToInt(res[4:8])
-        self.tiny.tool.denominateur = ByteToInt(res[0:4])
-        print('resolution = %s' % ByteToHex(res))
-        print('numerateur = %s' % self.tiny.tool.numerateur)
-        print('denominateur = %s' % self.tiny.tool.denominateur)
 
     def test(self):
         # calibrate zero
