@@ -15,6 +15,7 @@ def main():
         debug = False
 
     if options.music is not None:
+        import pdb; pdb.set_trace()
         MusicPlayer().test()
         sys.exit()
     
