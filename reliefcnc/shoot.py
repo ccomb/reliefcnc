@@ -98,17 +98,22 @@ class ReliefShooter(object):
         sleep = self.camdelay - (self.margin/speed)
         print 'sleep %s...' % sleep
 
-        if sleep < 0:
-            time.sleep(-sleep)
         # launch the burst
-        p = subprocess.Popen(self.cam_command)
-        if sleep > 0:
+        if sleep >= 0:
+            p = subprocess.Popen(self.cam_command)
             time.sleep(sleep)
+            # launch the main const move
+            print 'move to -%s' % half_range
+            self.tiny.move_const_x(-10*half_range)
+        # launch the burst
+        if sleep < 0:
+            # launch the main const move
+            print 'move to -%s' % half_range
+            self.tiny.move_const_x(-10*half_range)
+            time.sleep(-sleep)
+            p = subprocess.Popen(self.cam_command)
        
 
-        # launch the main const move
-        print 'move to -%s' % half_range
-        self.tiny.move_const_x(-10*half_range)
 
         # return to zero    
         self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
