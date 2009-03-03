@@ -74,7 +74,7 @@ class ReliefShooter(object):
         speed = self.base / self.burst_period  # mm/s
         print 'speed = %s' % speed
         # set the speed
-        self.tiny.set_speed(10*int(speed), self.tiny.motor.res_x)
+        self.tiny.set_speed(int(round(10*speed)), self.tiny.motor.res_x)
 
         # get the acceleration
         #acceleration = 10.0 / self.tiny.get_speed_acca()
