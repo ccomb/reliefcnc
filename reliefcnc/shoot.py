@@ -5,10 +5,11 @@ from pycnic.pycnic import TinyCN
 
 class ReliefShooter(object):
 
-    base = 10 # distance between 2 images in mm
+    base = 10.0 # distance between 2 images in mm
     nb_points = 8 # nb of stereoscopic images (8 for Alioscopy panel)
-    camdelay = 0.5 # delay (s) between the burst command and the 1st image
+    camdelay = 1.0 # delay (s) between the burst command and the 1st image
     burst_period = 1.515/7 # delay between 2 images
+    margin = 100.0 # move 10mm more to the left and right
     # The Nikon D200 took 8 images (7 intervals) in 1.515s
     position = 0 # current position in mm
 
@@ -18,7 +19,7 @@ class ReliefShooter(object):
         # motor resolution
         self.tiny.motor.res_x = 30
 
-        # speed
+        # const speed
         self.tiny.tool.speed = 800
         self.tiny.set_speed(self.tiny.tool.speed, self.tiny.motor.res_x)
     
@@ -41,19 +42,25 @@ class ReliefShooter(object):
         self.tiny.zero_x()
         self.position = 0
 
-    def move_to(self, position):
+    def move_to(self, position, ramp=1):
         """Move to specified position in mm using a ramp
         """
         self.position = position
-        self.step = self.position 
-        self.move_ramp(position)
+        self.step = self.position
+        if ramp:
+            self.move_ramp(position)
+        else:
+            self.move_const(position)
         
-    def move_by(self, distance):
+    def move_by(self, distance, ramp=0):
         """Move the camera by the specified distance in mm
         """
         current_position = self.tiny.get_x()
         steps_to_move = distance*10
-        self.tiny.move_ramp_x(current_position + steps_to_move)
+        if ramp:
+            self.tiny.move_ramp_x(current_position + steps_to_move)
+        else:
+            self.tiny.move_const_x(current_position + steps_to_move)
 
     def shoot(self):
         """shoot according to the parameters
@@ -64,36 +71,45 @@ class ReliefShooter(object):
 
         assert(self.nb_points > 0)
         # calculate the speed according to the burst rate
-        speed = int((self.nb_points-1) * self.base / self.burst_period) # mm/s
-        print 'speed %s' % speed
+        speed = self.base / self.burst_period  # mm/s
+        print 'speed = %s' % speed
+        # set the speed
+        self.tiny.set_speed(10*int(speed), self.tiny.motor.res_x)
 
         # get the acceleration
-        acceleration = 10.0 / self.tiny.get_speed_acca()
+        #acceleration = 10.0 / self.tiny.get_speed_acca()
 
         # calculate the acceleration length (D = Vmax^2 / a)
-        reso = 20.0 # factor for acc
-        acc_length = speed**2 / acceleration / reso
-        print 'acc_length %s' % acc_length
+        #reso = 10 # factor for acc
+        #acc_length = speed**2 / acceleration / reso
+        #print 'acc_length %s' % acc_length
 
-        # move to the left point + acceleration length + a 1cm margin
-        half_range = int(self.base/2 + acc_length + 10)
+        # move to the left point + a 1cm margin
+        half_range = int((self.nb_points-1)*self.base/2 + self.margin)
         print 'move to %s' % half_range
         self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
-        self.tiny.move_ramp_x(half_range)
+        self.tiny.move_ramp_x(10*half_range)
 
         # wait for the first ramp to finish
         while self.tiny.get_fifo_count() > 0:
             time.sleep(0.5)
 
-        # set the max speed of the ramp
-        self.tiny.set_speed_max(speed, self.tiny.motor.res_x)
-        # launch the main ramp
-        print 'move to -%s' % half_range
-        self.tiny.move_ramp_x(-half_range)
+        # compute the burst delay
+        sleep = self.camdelay - (self.margin/speed)
+        print 'sleep %s...' % sleep
 
+        if sleep < 0:
+            time.sleep(-sleep)
         # launch the burst
         p = subprocess.Popen(self.cam_command)
-        
+        if sleep > 0:
+            time.sleep(sleep)
+       
+
+        # launch the main const move
+        print 'move to -%s' % half_range
+        self.tiny.move_const_x(-10*half_range)
+
         # return to zero    
         self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
         self.tiny.move_ramp_x(0)
