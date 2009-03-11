@@ -9,8 +9,9 @@ def main():
     parser.add_option('', '--music', nargs=0, help='play music')
     parser.add_option('-t', '--test', nargs=0, help='test')
     parser.add_option('-m', '--moveby', nargs=1, help='move by N steps')
-    parser.add_option('-s', '--shoot', nargs=0, help='shoot sequence')
-    parser.add_option('-b', '--base', nargs=1, help='define the base in mm')
+    parser.add_option('', '--burst', nargs=0, help='shoot sequence in burst mode')
+    parser.add_option('', '--slow', nargs=0, help='shoot sequence slowly')
+    parser.add_option('', '--base', nargs=1, help='define the base in mm')
     (options, args) = parser.parse_args()
     if options.debug is not None:
         debug = True
@@ -30,13 +31,21 @@ def main():
         sys.exit()
         
     
-    if options.shoot is not None:
+    if options.burst is not None:
         shooter = ReliefShooter(debug=debug)
-        shooter.base = 4
         if options.base and options.base.isdigit():
             shooter.base = int(options.base)
-        shooter.camdelay = 1.5
-        shooter.shoot()
+        shooter.camdelay = 0.8
+        shooter.burst()
+        #shooter.shoot()
+        sys.exit()
+
+    if options.slow is not None:
+        shooter = ReliefShooter(debug=debug)
+        if options.base and options.base.isdigit():
+            shooter.base = int(options.base)
+        shooter.camdelay = 0.8
+        shooter.slow()
         #shooter.shoot()
         sys.exit()
 

@@ -2,6 +2,8 @@
 import subprocess
 import time
 from pycnic.pycnic import TinyCN
+import os
+import signal
 
 class ReliefShooter(object):
 
@@ -27,17 +29,6 @@ class ReliefShooter(object):
         self.tiny.set_speed_acca(3)
         self.tiny.set_speed_accb(1)
 
-        self.cam_command = (
-            'gphoto2',
-            '--auto-detect',
-            '--set-config',
-            '/main/settings/capturetarget=1',
-            '--set-config',
-            '/main/capturesettings/capturemode=1',
-            '--set-config',
-            '/main/capturesettings/burstnumber=%s' % self.nb_points,
-            '--capture-image')
-
     def zero(self):    
         self.tiny.zero_x()
         self.position = 0
@@ -62,10 +53,22 @@ class ReliefShooter(object):
         else:
             self.tiny.move_const_x(current_position + steps_to_move)
 
-    def shoot(self):
+    def burst(self):
         """shoot according to the parameters
         """
+        self.cam_command = (
+            'gphoto2',
+            '--auto-detect',
+            '--set-config',
+            '/main/settings/capturetarget=1',
+            '--set-config',
+            '/main/capturesettings/capturemode=1',
+            '--set-config',
+            '/main/capturesettings/burstnumber=%s' % self.nb_points,
+            '--capture-image')
+
         print(u'base = %s' % self.base)
+        print(u'margin = %s' % self.margin)
 
         # reset to zero
         self.tiny.zero_x()
@@ -77,15 +80,7 @@ class ReliefShooter(object):
         # set the speed
         self.tiny.set_speed(int(round(10*speed)), self.tiny.motor.res_x)
 
-        # get the acceleration
-        #acceleration = 10.0 / self.tiny.get_speed_acca()
-
-        # calculate the acceleration length (D = Vmax^2 / a)
-        #reso = 10 # factor for acc
-        #acc_length = speed**2 / acceleration / reso
-        #print 'acc_length %s' % acc_length
-
-        # move to the left point + a 1cm margin
+        # move to the left point + a margin
         half_range = int((self.nb_points-1)*self.base/2 + self.margin)
         print 'move to %s' % half_range
         self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
@@ -113,8 +108,6 @@ class ReliefShooter(object):
             self.tiny.move_const_x(-10*half_range)
             time.sleep(-sleep)
             p = subprocess.Popen(self.cam_command)
-       
-
 
         # return to zero    
         self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
@@ -126,5 +119,70 @@ class ReliefShooter(object):
 
         print u'finished!'
         #while self.tiny.get_buffer_state() != '\x00\x80':
-        #    pass
+        #    time.sleep(0.5)
+
+    def slow(self):
+        """shoot slowly according to the parameters
+        """
+        self.cam_command = (
+            'gphoto2',
+            '--auto-detect',
+            '--set-config',
+            '/main/settings/capturetarget=1',
+            '--set-config',
+            '/main/capturesettings/capturemode=0',
+            '--capture-image',
+            '-I', '-1')
+
+        print(u'base = %s' % self.base)
+        print(u'margin = %s' % self.margin)
+
+        # reset to zero
+        self.tiny.zero_x()
+
+        assert(self.nb_points > 0)
+        # set the speed
+        self.tiny.set_speed(2500, self.tiny.motor.res_x)
+
+        # move to the left point
+        half_range = int((self.nb_points-1)*self.base/2)
+        print 'move to %s' % half_range
+        self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
+        self.tiny.move_ramp_x(10*half_range)
+
+        # wait for the first ramp to finish
+        while self.tiny.get_fifo_count() > 0:
+            time.sleep(0.1)
+
+        # shoot the first image and let gphoto wait
+        p = subprocess.Popen(self.cam_command)
+        time.sleep(2)
+
+        # loop over each stop point
+        for i in range(self.nb_points-1, -1, -1):
+            # move to the next point
+            nextpoint = int(10*(-half_range + float(i)*2*half_range/self.nb_points))
+            print(u'move to %s' % nextpoint)
+            self.tiny.move_ramp_x(nextpoint)
+            # wait for the ramp to finish
+            while self.tiny.get_fifo_count() > 0:
+                time.sleep(0.1)
+            # shoot the next image
+            os.kill(p.pid, signal.SIGUSR1)
+            time.sleep(2)
+
+        # return to zero    
+        self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
+        self.tiny.move_ramp_x(0)
+    
+        # wait for the ramp to finish
+        while self.tiny.get_fifo_count() > 0:
+            time.sleep(0.5)
+
+        # kill gphoto2
+        os.kill(p.pid, signal.SIGQUIT)
+
+        print u'finished!'
+        #while self.tiny.get_buffer_state() != '\x00\x80':
+        #    time.sleep(0.5)
     
