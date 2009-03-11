@@ -33,7 +33,7 @@ def main():
     if options.shoot is not None:
         shooter = ReliefShooter(debug=debug)
         shooter.base = 4
-        if options.base.isdigit():
+        if options.base and options.base.isdigit():
             shooter.base = int(options.base)
         shooter.camdelay = 1.5
         shooter.shoot()

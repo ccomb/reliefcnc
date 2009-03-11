@@ -9,7 +9,7 @@ class ReliefShooter(object):
     nb_points = 8 # nb of stereoscopic images (8 for Alioscopy panel)
     camdelay = 1.0 # delay (s) between the burst command and the 1st image
     burst_period = 1.515/7 # delay between 2 images
-    margin = 100.0 # move 10mm more to the left and right
+    margin = 50.0 # move 50mm more to the left and right
     # The Nikon D200 took 8 images (7 intervals) in 1.515s
     position = 0 # current position in mm
 
@@ -65,6 +65,7 @@ class ReliefShooter(object):
     def shoot(self):
         """shoot according to the parameters
         """
+        print(u'base = %s' % self.base)
 
         # reset to zero
         self.tiny.zero_x()
@@ -119,9 +120,9 @@ class ReliefShooter(object):
         self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
         self.tiny.move_ramp_x(0)
     
-        # wait for the buffer to be empty
-        #while self.tiny.get_fifo_count() > 0:
-        #    time.sleep(0.5)
+        # wait for the first ramp to finish
+        while self.tiny.get_fifo_count() > 0:
+            time.sleep(0.5)
 
         print u'finished!'
         #while self.tiny.get_buffer_state() != '\x00\x80':
