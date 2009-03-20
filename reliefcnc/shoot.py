@@ -24,12 +24,12 @@ class ReliefShooter(object):
         # const speed
         self.tiny.tool.speed = 800
         self.tiny.set_speed(self.tiny.tool.speed, self.tiny.motor.res_x)
-    
+
         # set maximum acceleration
         self.tiny.set_speed_acca(3)
         self.tiny.set_speed_accb(1)
 
-    def zero(self):    
+    def zero(self):
         self.tiny.zero_x()
         self.position = 0
 
@@ -42,7 +42,7 @@ class ReliefShooter(object):
             self.move_ramp(position)
         else:
             self.move_const(position)
-        
+
     def move_by(self, distance, ramp=0):
         """Move the camera by the specified distance in mm
         """
@@ -109,10 +109,10 @@ class ReliefShooter(object):
             time.sleep(-sleep)
             p = subprocess.Popen(self.cam_command)
 
-        # return to zero    
+        # return to zero
         self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
         self.tiny.move_ramp_x(0)
-    
+
         # wait for the first ramp to finish
         while self.tiny.get_fifo_count() > 0:
             time.sleep(0.5)
@@ -131,6 +131,8 @@ class ReliefShooter(object):
             '/main/settings/capturetarget=1',
             '--set-config',
             '/main/capturesettings/capturemode=0',
+            '--set-config',
+            '/main/capturesettings/burstnumber=1',
             '--capture-image',
             '-I', '-1')
 
@@ -156,10 +158,10 @@ class ReliefShooter(object):
 
         # shoot the first image and let gphoto wait
         p = subprocess.Popen(self.cam_command)
-        time.sleep(2)
+        time.sleep(4)
 
         # loop over each stop point
-        for i in range(self.nb_points-1, -1, -1):
+        for i in range(self.nb_points-1, 0, -1):
             # move to the next point
             nextpoint = int(10*(-half_range + float(i)*2*half_range/self.nb_points))
             print(u'move to %s' % nextpoint)
@@ -171,10 +173,10 @@ class ReliefShooter(object):
             os.kill(p.pid, signal.SIGUSR1)
             time.sleep(2)
 
-        # return to zero    
+        # return to zero
         self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
         self.tiny.move_ramp_x(0)
-    
+
         # wait for the ramp to finish
         while self.tiny.get_fifo_count() > 0:
             time.sleep(0.5)
@@ -185,4 +187,4 @@ class ReliefShooter(object):
         print u'finished!'
         #while self.tiny.get_buffer_state() != '\x00\x80':
         #    time.sleep(0.5)
-    
+
