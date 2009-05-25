@@ -19,7 +19,7 @@ class ReliefShooter(object):
         self.tiny = TinyCN(debug=debug)
 
         # motor resolution
-        self.tiny.motor.res_x = 30
+        self.tiny.motor.res_x = 2
 
         # const speed
         self.tiny.tool.speed = 800
@@ -43,7 +43,7 @@ class ReliefShooter(object):
         else:
             self.move_const(position)
 
-    def move_by(self, distance, ramp=0):
+    def move_by(self, distance, ramp=1):
         """Move the camera by the specified distance in mm
         """
         current_position = self.tiny.get_x()
@@ -142,6 +142,8 @@ class ReliefShooter(object):
         # reset to zero
         self.tiny.zero_x()
 
+        #import pdb; pdb.set_trace()
+
         assert(self.nb_points > 0)
         # set the speed
         self.tiny.set_speed(2500, self.tiny.motor.res_x)
@@ -158,7 +160,7 @@ class ReliefShooter(object):
 
         # shoot the first image and let gphoto wait
         p = subprocess.Popen(self.cam_command)
-        time.sleep(4)
+        time.sleep(7)
 
         # loop over each stop point
         for i in range(self.nb_points-1, 0, -1):
@@ -169,9 +171,10 @@ class ReliefShooter(object):
             # wait for the ramp to finish
             while self.tiny.get_fifo_count() > 0:
                 time.sleep(0.1)
+            time.sleep(2)
             # shoot the next image
             os.kill(p.pid, signal.SIGUSR1)
-            time.sleep(2)
+            time.sleep(3)
 
         # return to zero
         self.tiny.set_speed_max(2500, self.tiny.motor.res_x)

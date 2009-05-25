@@ -7,7 +7,6 @@ def main():
     parser = OptionParser()
     parser.add_option('-d', '--debug', nargs=0, help='set debug mode')
     parser.add_option('', '--music', nargs=0, help='play music')
-    parser.add_option('-t', '--test', nargs=0, help='test')
     parser.add_option('-m', '--moveby', nargs=1, help='move by N steps')
     parser.add_option('', '--burst', nargs=0, help='shoot sequence in burst mode')
     parser.add_option('', '--slow', nargs=0, help='shoot sequence slowly')
@@ -29,8 +28,8 @@ def main():
         shooter = ReliefShooter(debug=debug)
         shooter.move_by(int(options.moveby))
         sys.exit()
-        
-    
+
+
     if options.burst is not None:
         shooter = ReliefShooter(debug=debug)
         if options.base and options.base.isdigit():
