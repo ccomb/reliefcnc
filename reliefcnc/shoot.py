@@ -16,6 +16,11 @@ class ReliefShooter(object):
     position = 0 # current position in mm
 
     def __init__(self, debug=False):
+        self.on(debug)
+
+    def on(self, debug=False):
+        """switch on the controller
+        """
         self.tiny = TinyCN(debug=debug)
 
         # motor resolution
@@ -29,6 +34,11 @@ class ReliefShooter(object):
         self.tiny.set_speed_acca(3)
         self.tiny.set_speed_accb(1)
 
+    def off(self):
+        """switch off the controller
+        """
+        self.tiny.off()
+
     def zero(self):
         self.tiny.zero_x()
         self.position = 0
@@ -37,11 +47,10 @@ class ReliefShooter(object):
         """Move to specified position in mm using a ramp
         """
         self.position = position
-        self.step = self.position
         if ramp:
-            self.move_ramp(position)
+            self.tiny.move_ramp_x(position)
         else:
-            self.move_const(position)
+            self.tiny.move_const_x(position)
 
     def move_by(self, distance, ramp=1):
         """Move the camera by the specified distance in mm
@@ -141,8 +150,6 @@ class ReliefShooter(object):
 
         # reset to zero
         self.tiny.zero_x()
-
-        #import pdb; pdb.set_trace()
 
         assert(self.nb_points > 0)
         # set the speed
