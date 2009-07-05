@@ -23,6 +23,7 @@ class ReliefShooter(object):
         """
         self.tiny = TinyCN(debug=debug)
 
+    def init(self):
         # motor resolution
         self.tiny.motor.res_x = 2
 
@@ -43,6 +44,19 @@ class ReliefShooter(object):
         self.tiny.zero_x()
         self.position = 0
 
+    def reset(self):
+        pass
+        #self.tiny.handle.clearHalt(0x01)
+        #self.tiny.handle.clearHalt(0x02)
+        #self.tiny.handle.clearHalt(0x81)
+        #self.tiny.handle.clearHalt(0x82)
+        #self.tiny.handle.reset()
+        #self.tiny.handle.resetEndpoint(0x01)
+        #self.tiny.handle.resetEndpoint(0x02)
+        #self.tiny.handle.resetEndpoint(0x81)
+        #self.tiny.handle.resetEndpoint(0x82)
+        #self.tiny.restart()
+
     def move_to(self, position, ramp=1):
         """Move to specified position in mm using a ramp
         """
@@ -51,6 +65,9 @@ class ReliefShooter(object):
             self.tiny.move_ramp_x(position)
         else:
             self.tiny.move_const_x(position)
+        # wait for the move to finish
+        while self.tiny.get_fifo_count() > 0:
+            time.sleep(0.5)
 
     def move_by(self, distance, ramp=1):
         """Move the camera by the specified distance in mm
@@ -61,6 +78,11 @@ class ReliefShooter(object):
             self.tiny.move_ramp_x(current_position + steps_to_move)
         else:
             self.tiny.move_const_x(current_position + steps_to_move)
+        # wait for the move to finish
+        while self.tiny.get_fifo_count() > 0:
+            time.sleep(0.5)
+        #while self.tiny.get_buffer_state() != 0x8000:
+        #    time.sleep(0.5)
 
     def burst(self):
         """shoot according to the parameters
