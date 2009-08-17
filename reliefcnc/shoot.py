@@ -10,9 +10,9 @@ class ReliefShooter(object):
     base = 10.0 # distance between 2 images in mm
     nb_points = 8 # nb of stereoscopic images (8 for Alioscopy panel)
     camdelay = 1.0 # delay (s) between the burst command and the 1st image
+    # The Nikon D200 took 8 images (7 intervals) in 1.515s
     burst_period = 1.515/7 # delay between 2 images
     margin = 50.0 # move 50mm more to the left and right
-    # The Nikon D200 took 8 images (7 intervals) in 1.515s
     position = 0 # current position in mm
 
     def __init__(self, debug=False):
@@ -68,6 +68,8 @@ class ReliefShooter(object):
         # wait for the move to finish
         while self.tiny.get_fifo_count() > 0:
             time.sleep(0.5)
+        #while self.tiny.get_buffer_state() != 0x8000:
+        #    time.sleep(0.5)
 
     def move_by(self, distance, ramp=1):
         """Move the camera by the specified distance in mm
