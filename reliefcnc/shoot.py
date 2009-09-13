@@ -210,7 +210,7 @@ class ReliefShooter(object):
         time.sleep(7)
 
         # loop over each stop point
-        for i in range(self.nb_points):
+        for i in range(self.nb_points-1):
             # move to the next point
             logger.info(u'moving by %s' % -self.base)
             self.move_by(-self.base)
