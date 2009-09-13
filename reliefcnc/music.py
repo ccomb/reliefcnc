@@ -1,6 +1,6 @@
 # coding: utf-8
 import sys
-from pycnic.pycnic import TinyCN
+from pycnic.techlf import TinyCN
 
 class MusicPlayer(object):
     """music player with a stepper motor
@@ -44,10 +44,10 @@ class MusicPlayer(object):
             self.way = -self.way
             steps_to_move = self.way * speed * duration
             final_position = self.current_position + steps_to_move
-    
+
         if final_position > 10000 or final_position < 0:
             raise('range too large')
-    
+
         self.current_position = final_position
         self.tiny.move_const_x(final_position)
 
@@ -66,7 +66,7 @@ class MusicPlayer(object):
         self.play('C', 0.3, -1)
         self.play('C', 0.3, -1)
         self.play('C', 1, -1)
-    
+
         self.play('C', 1)
         self.play('G', 1)
         self.play('C2', 1.7)
@@ -80,34 +80,34 @@ class MusicPlayer(object):
         self.play('C', 0.3, -1)
         self.play('C', 0.3, -1)
         self.play('C', 1, -1)
-    
+
         self.play('C', 1)
         self.play('G', 1)
         self.play('C2', 1.7)
         self.play('G2', 0.3)
         self.play('A2', 2)
-    
-    
+
+
         self.play('A2', 0.33, -1)
         self.play('B3', 0.33)
         self.play('C3', 1)
         self.play('D3', 1)
-    
+
         self.play('E3', 0.5)
         self.play('F3', 0.5)
         self.play('G3', 1)
-    
+
         self.play('E3', 0.5)
         self.play('C3', 0.5)
         self.play('G2', 0.5)
         self.play('E2', 0.5)
-    
+
         self.play('E3', 0.5)
         self.play('F3', 0.5)
         self.play('G3', 1)
-    
+
         self.play('A4', 1)
         self.play('B4', 1)
         self.play('C4', 2)
-    
+
         sys.exit()

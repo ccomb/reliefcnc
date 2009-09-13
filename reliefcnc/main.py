@@ -12,6 +12,7 @@ def main():
     parser.add_option('', '--burst', nargs=0, help=u'shoot sequence in burst mode')
     parser.add_option('', '--slow', nargs=0, help=u'shoot sequence slowly')
     parser.add_option('', '--base', type='int', nargs=1, help=u'define the base in mm')
+    parser.add_option('', '--zero', nargs=0, help=u'return to zero')
     options, args = parser.parse_args()
     if options.debug is not None:
         debug = True
@@ -27,32 +28,35 @@ def main():
           or (options.move[0] in ('+','-')
             and options.move[1:].isdigit()))):
         shooter = ReliefShooter(debug=debug)
-        shooter.init()
         if options.move[0] in ('+', '-'):
             shooter.move_by(int(options.move))
         else:
             shooter.move_to(int(options.move))
         sys.exit()
 
+    if options.zero is not None:
+        shooter = ReliefShooter(debug=debug)
+        shooter.cnc.x = None
+        sys.exit()
 
     if options.burst is not None:
-        shooter = ReliefShooter(debug=debug)
-        shooter.init()
+        shooter = ReliefShooter(debug=debug,
+                                resolution=100.0/3,
+                                maxrange=360)
         if options.base:
             shooter.base = options.base
         shooter.camdelay = 0.8
         shooter.burst()
-        #shooter.shoot()
         sys.exit()
 
     if options.slow is not None:
-        shooter = ReliefShooter(debug=debug)
-        shooter.init()
+        shooter = ReliefShooter(debug=debug,
+                                resolution=100.0/3,
+                                maxrange=360)
         if options.base:
             shooter.base = options.base
         shooter.camdelay = 0.8
         shooter.slow()
-        #shooter.shoot()
         sys.exit()
 
     if options.reset is not None:
