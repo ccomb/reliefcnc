@@ -242,7 +242,7 @@ class ReliefShooter(object):
         # move to the left point
         half_range = int((self.nb_points-1)*self.base/2.0)
         logger.info('move to %s' % half_range)
-        self.move_by(half_range)
+        self.move_by(-half_range)
 
         # shoot the first image
         time.sleep(3)
@@ -251,7 +251,7 @@ class ReliefShooter(object):
         for i in range(self.nb_points-1):
             # move to the next point
             logger.info(u'moving by %s' % -self.base)
-            self.move_by(-self.base)
+            self.move_by(self.base)
             # shoot the next image
             time.sleep(3)
 
