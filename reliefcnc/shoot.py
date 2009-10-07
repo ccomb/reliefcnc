@@ -206,7 +206,7 @@ class ReliefShooter(object):
         self.move_by(half_range)
 
         # shoot the first image and let gphoto wait
-        p = subprocess.Popen(self.cam_command)
+        p = subprocess.Popen(self.cam_command, close_fds=True)
         time.sleep(7)
 
         # loop over each stop point
@@ -223,8 +223,9 @@ class ReliefShooter(object):
         self.cnc.speed=2500
         self.move_to(0)
 
-        # kill gphoto2
-        os.kill(p.pid, signal.SIGQUIT)
+        # hang-up gphoto2
+        os.kill(p.pid, signal.SIGHUP)
+        p.wait()
 
         logger.info(u'finished!')
 

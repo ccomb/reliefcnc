@@ -12,6 +12,7 @@ def main():
     parser.add_option('', '--burst', nargs=0, help=u'shoot sequence in burst mode')
     parser.add_option('', '--slow', nargs=0, help=u'shoot sequence slowly')
     parser.add_option('', '--base', type='int', nargs=1, help=u'define the base in mm')
+    parser.add_option('', '--points', type='int', nargs=1, help=u'define the nb of points')
     parser.add_option('', '--zero', nargs=0, help=u'return to zero')
     options, args = parser.parse_args()
     if options.debug is not None:
@@ -45,6 +46,8 @@ def main():
                                 maxrange=360)
         if options.base:
             shooter.base = options.base
+        if options.points:
+            shooter.nb_points = options.points
         shooter.camdelay = 0.8
         shooter.burst()
         sys.exit()
@@ -55,6 +58,8 @@ def main():
                                 maxrange=360)
         if options.base:
             shooter.base = options.base
+        if options.points:
+            shooter.nb_points = options.points
         shooter.camdelay = 0.8
         shooter.slow()
         sys.exit()
