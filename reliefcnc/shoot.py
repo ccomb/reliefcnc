@@ -246,7 +246,7 @@ class ReliefShooter(object):
         self.move_by(-half_range)
 
         # shoot the first image
-        time.sleep(3)
+        time.sleep(2)
 
         # loop over each stop point
         for i in range(self.nb_points-1):
@@ -254,7 +254,7 @@ class ReliefShooter(object):
             logger.info(u'moving by %s' % -self.base)
             self.move_by(self.base)
             # shoot the next image
-            time.sleep(3)
+            time.sleep(2)
 
         # return to zero
         self.cnc.speed=2500
