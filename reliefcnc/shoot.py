@@ -184,14 +184,7 @@ class ReliefShooter(object):
         self.cam_command = (
             'gphoto2',
             '--auto-detect',
-            '--set-config',
-            '/main/settings/capturetarget=1',
-            '--set-config',
-            '/main/capturesettings/capturemode=0',
-            '--set-config',
-            '/main/capturesettings/burstnumber=1',
-            '--capture-image',
-            '-I', '-1')
+            '--capture-image')
 
         logger.info(u'base = %s' % self.base)
         logger.info(u'margin = %s' % self.margin)
@@ -207,25 +200,21 @@ class ReliefShooter(object):
 
         # shoot the first image and let gphoto wait
         p = subprocess.Popen(self.cam_command, close_fds=True)
-        time.sleep(7)
+        p.wait()
 
         # loop over each stop point
         for i in range(self.nb_points-1):
             # move to the next point
             logger.info(u'moving by %s' % -self.base)
             self.move_by(-self.base)
-            time.sleep(2)
+            time.sleep(1)
             # shoot the next image
-            os.kill(p.pid, signal.SIGUSR1)
-            time.sleep(3)
+            p = subprocess.Popen(self.cam_command, close_fds=True)
+            p.wait()
 
         # return to zero
         self.cnc.speed=2500
         self.move_to(0)
-
-        # hang-up gphoto2
-        os.kill(p.pid, signal.SIGHUP)
-        p.wait()
 
         logger.info(u'finished!')
 
