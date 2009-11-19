@@ -13,10 +13,9 @@ class ReliefShooter(object):
 
     base = 10.0 # distance between 2 images in mm
     nb_points = 8 # nb of stereoscopic images (8 for Alioscopy panel)
-    camdelay = 1.0 # delay (s) between the burst command and the 1st image
+    camdelay = 1.7 # delay (s) between the burst command and the 1st image
     # The Nikon D200 took 8 images (7 intervals) in 1.515s
     burst_period = 1.515/7 # delay between 2 images
-    margin = 50.0 # move 50mm more to the left and right
     position = 0 # current position in mm
     resolution = None # each move will be multiplied by the resolution
     maxrange = None
@@ -89,7 +88,7 @@ class ReliefShooter(object):
         """
         self.cnc.disconnect()
 
-    def move_to(self, position):
+    def move_to(self, position, ramp=1):
         """Move to specified position in mm using a ramp
         """
         position = position*self.resolution
@@ -97,7 +96,7 @@ class ReliefShooter(object):
             logger.error("just don't do that")
             return
         self.position = position
-        self.cnc.move(x=position)
+        self.cnc.move(x=position, ramp=ramp)
         self.cnc.wait()
 
     def move_by(self, distance, ramp=1):
@@ -127,54 +126,39 @@ class ReliefShooter(object):
             '--capture-image')
 
         logger.info(u'base = %s' % self.base)
-        logger.info(u'margin = %s' % self.margin)
 
-        # reset to zero
-        self.tiny.zero_x()
+        # assume we are in the middle of the rail
+        self.cnc.x = 0
 
         assert(self.nb_points > 0)
-        # calculate the speed according to the burst rate
+
+        self.cnc.speed = 2000
+
+        # calculate the speed according to the camera burst rate
         speed = self.base / self.burst_period  # mm/s
-        logger.info('speed = %s' % speed)
-        # set the speed
-        self.tiny.set_speed(int(round(10*speed)), self.tiny.motor.res_x)
+        logger.info('speed = %s mm/s' % speed)
 
-        # move to the left point + a margin
-        half_range = int((self.nb_points-1)*self.base/2 + self.margin)
-        logger.info('move to %s' % half_range)
-        self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
-        self.tiny.move_ramp_x(10*half_range)
+        # compute the margin corresponding to the camdelay
+        margin = speed * self.camdelay
+        logger.info(u'margin = %s' % margin)
 
-        # wait for the first ramp to finish
-        while self.tiny.get_fifo_count() > 0:
-            time.sleep(0.5)
+        # move to the left point + the margin
+        half_range = int((self.nb_points-1)*self.base/2.0 + margin + 10)
+        logger.info('move to %s mm' % half_range)
+        self.move_to(half_range)
 
-        # compute the burst delay
-        sleep = self.camdelay - (self.margin/speed)
-        logger.info('sleep %s...' % sleep)
+        # set the speed (in steps/s)
+        self.cnc.speed = round(speed*self.resolution)
 
-        # launch the burst
-        if sleep >= 0:
-            p = subprocess.Popen(self.cam_command)
-            time.sleep(sleep)
-            # launch the main const move
-            logger.info('move to -%s' % half_range)
-            self.tiny.move_const_x(-10*half_range)
-        # launch the burst
-        if sleep < 0:
-            # launch the main const move
-            logger.info('move to -%s' % half_range)
-            self.tiny.move_const_x(-10*half_range)
-            time.sleep(-sleep)
-            p = subprocess.Popen(self.cam_command)
+        logger.info('Ok, ready to shoot')
+        # launch the shooting and the main const move
+        logger.info('move to -%s mm' % half_range)
+        p = subprocess.Popen(self.cam_command)
+        self.move_to(-half_range, ramp=0)
 
         # return to zero
-        self.tiny.set_speed_max(2500, self.tiny.motor.res_x)
-        self.tiny.move_ramp_x(0)
-
-        # wait for the first ramp to finish
-        while self.tiny.get_fifo_count() > 0:
-            time.sleep(0.5)
+        self.cnc.speed = 2000
+        self.move_to(0)
 
         logger.info(u'finished!')
 
@@ -187,7 +171,6 @@ class ReliefShooter(object):
             '--capture-image')
 
         logger.info(u'base = %s' % self.base)
-        logger.info(u'margin = %s' % self.margin)
 
         assert(self.nb_points > 0)
         # set the speed
@@ -223,7 +206,6 @@ class ReliefShooter(object):
         """shoot slowly and just wait between photos
         """
         logger.info(u'base = %s' % self.base)
-        logger.info(u'margin = %s' % self.margin)
 
         assert(self.nb_points > 0)
         # set the speed
