@@ -168,6 +168,12 @@ class ReliefShooter(object):
         self.cam_command = (
             'gphoto2',
             '--auto-detect',
+            '--set-config',
+            '/main/settings/capturetarget=1',
+            '--set-config',
+            '/main/capturesettings/capturemode=0',
+            '--set-config',
+            '/main/capturesettings/burstnumber=1',
             '--capture-image')
 
         logger.info(u'base = %s' % self.base)
