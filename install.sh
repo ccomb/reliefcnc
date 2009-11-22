@@ -2,7 +2,7 @@
 # on Ubuntu 9.04
 
 # packages
-sudo aptitude install vim mercurial python2.5 python2.5-dev python-setuptools ssh build-essential libusb-0.1-4 libusb-dev htop libavcodec52 vlc gstreamer0.10-ffmpeg gstreamer0.10-plugins-ugly nvidia-glx-180 libmp3lame0 flac mplayer mencoder libx264-65 git
+sudo aptitude install vim mercurial python2.5 python2.5-dev python-setuptools ssh build-essential libusb-0.1-4 libusb-dev htop libavcodec52 vlc gstreamer0.10-ffmpeg gstreamer0.10-plugins-ugly libmp3lame0 flac mplayer mencoder libx264-65 git libltdl7 libltdl-dev libexif12 libexif-dev libpopt0 libpopt-dev libreadline6 libreadline6-dev
 
 # ffmpeg and libx264
 sudo aptitude install subversion git-core checkinstall yasm texi2html libfaac-dev libfaad-dev libmp3lame-dev libsdl1.2-dev libtheora-dev libx11-dev libxvidcore4-dev zlib1g-dev
@@ -23,16 +23,13 @@ make
 sudo checkinstall --fstrans=no --install=yes --pkgname=ffmpeg --pkgversion "3:0.svn`date +%Y%m%d`-12ubuntu3" --default
 
 
-# nvidia config
-sudo nvidia-xconfig
-
 # usb settings
-sudo touch /etc/udev/rules.d/75-soprolec.rules
-sudo chmod 777 /etc/udev/rules.d/75-soprolec.rules
-cat > /etc/udev/rules.d/75-soprolec.rules << EOF
-SYSFS{idVendor}=="067b", SYSFS{idProduct}=="2303", MODE="777"
-EOF
-sudo chmod 644 /etc/udev/rules.d/75-soprolec.rules
+#sudo touch /etc/udev/rules.d/75-soprolec.rules
+#sudo chmod 777 /etc/udev/rules.d/75-soprolec.rules
+#cat > /etc/udev/rules.d/75-soprolec.rules << EOF
+#SYSFS{idVendor}=="067b", SYSFS{idProduct}=="2303", MODE="777"
+#EOF
+#sudo chmod 644 /etc/udev/rules.d/75-soprolec.rules
 
 # vim settings
 cat > ~/.vimrc << EOF
@@ -71,13 +68,14 @@ eggs-directory = /home/ccomb/buildout-eggs
 EOF
 
 # application code
+cd
 mkdir -p relief
 cd relief
 hg clone https://ccomb:antalya@cody.gorfou.fr/hg/pycnic
 hg clone https://ccomb:antalya@cody.gorfou.fr/hg-private/reliefcnc
 hg clone https://ccomb:antalya@cody.gorfou.fr/hg-private/reliefgui
 
-# dependencies
+# pyusb
 wget -c http://downloads.sourceforge.net/project/pyusb/pyusb/0.4.2/pyusb-0.4.2.tar.gz?use_mirror=freefr
 tar xzf pyusb-0.4.2.tar.gz
 ln -s pyusb-0.4.2 pyusb
@@ -90,5 +88,28 @@ for i in pycnic reliefcnc reliefgui; do
   ./bin/buildout
   cd ..
 done
+
+#libgphoto2
+cd
+wget http://downloads.sourceforge.net/project/gphoto/libgphoto/2.4.7/libgphoto2-2.4.7.tar.bz2?use_mirror=freefr
+tar xjf libgphoto2-2.4.7.tar.bz2
+cd libgphoto2-2.4.7
+./configure
+make
+sudo checkinstall --fstrans=no --install=yes --pkgname=libgphoto2 --pkgversion "2.4.7-relief1" --default
+
+# gphoto
+cd
+wget http://downloads.sourceforge.net/project/gphoto/gphoto/2.4.7/gphoto2-2.4.7.tar.bz2?use_mirror=freefr
+tar xjf gphoto2-2.4.7.tar.bz2
+cd gphoto2-2.4.7
+./configure
+make
+sudo checkinstall --fstrans=no --install=yes --pkgname=gphoto2 --pkgversion "2.4.7-relief1" --default
+
+
+
+
+
 
 
