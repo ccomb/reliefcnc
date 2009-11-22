@@ -107,9 +107,63 @@ cd gphoto2-2.4.7
 make
 sudo checkinstall --fstrans=no --install=yes --pkgname=gphoto2 --pkgversion "2.4.7-relief1" --default
 
+# enable dnsmasq (dhcp+dns for local use)
+sudo aptitude install dnsmasq
+# remove dhcp config
+sudo sed -i '/^dhcp-range=.*/d' /etc/dnsmasq.conf
+# add dhcp config
+sudo sed -i '$adhcp-range=10.0.0.2,10.0.0.50,255.255.255.0,12h' /etc/dnsmasq.conf
+
+# remove ourselves
+sudo sed -i '/^10.0.0.1.*/d' /etc/hosts
+# append ourselves
+sudo sed -i '$a10.0.0.1 relief' /etc/hosts
 
 
+# don't login automatically
+sudo sed -i 's/AutomaticLoginEnable=true/AutomaticLoginEnable=false/' /etc/gdm/custom.conf
 
+# start the reliefgui automatically
+sudo sed -i '/#relief/d' /etc/rc.local
+sudo sed -i "/^exit/isu - ccomb -c 'cd /home/ccomb/relief/reliefgui; ./bin/paster serve --daemon development.ini' #relief" /etc/rc.local
+
+# nm config
+cat > /tmp/relief << EOF
+[connection]
+id=relief
+uuid=286a944a-8443-4b8e-acbc-dc2da66637ca
+type=802-3-ethernet
+autoconnect=true
+timestamp=0
+
+[ipv4]
+method=manual
+addresses1=10.0.0.1;24;10.0.0.1;
+ignore-auto-routes=false
+ignore-auto-dns=false
+dhcp-send-hostname=false
+never-default=false
+
+[802-3-ethernet]
+speed=0
+duplex=full
+auto-negotiate=true
+mac-address=0:1c:c0:9c:2a:85
+mtu=0
+
+[ipv6]
+method=ignore
+ignore-auto-routes=false
+ignore-auto-dns=false
+never-default=false
+EOF
+sudo mv /tmp/relief /etc/NetworkManager/system-connections/relief
+
+# net config
+macaddr=`/sbin/ifconfig eth2|grep HW|awk '{print $5}'`
+
+sudo sed -i "/^no-auto-default=/d" /etc/NetworkManager/nm-system-settings.conf
+sudo sed -i "/^\[main\].*/ano-auto-default=$macaddr," /etc/NetworkManager/nm-system-settings.conf
 
 
 
