@@ -13,7 +13,7 @@ class ReliefShooter(object):
 
     base = 10.0 # distance between 2 images in mm
     nb_points = 8 # nb of stereoscopic images (8 for Alioscopy panel)
-    camdelay = 0.1 # delay (s) between the burst command and the 1st image
+    camdelay = 0.135 # delay (s) between the burst command and the 1st image
     # The Nikon D200 took 8 images (7 intervals) in 1.515s
     burst_period = 1.515/7 # delay between 2 images
     position = 0 # current position in mm
