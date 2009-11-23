@@ -114,6 +114,7 @@ class ReliefShooter(object):
     def burst(self):
         """shoot according to the parameters
         """
+        subprocess.Popen(('killall', 'gphoto2'))
         self.cam_command = (
             'gphoto2',
             '--auto-detect',
@@ -136,7 +137,7 @@ class ReliefShooter(object):
 
         assert(self.nb_points > 0)
 
-        self.cnc.speed = 2000
+        self.cnc.speed = 2500
 
         # calculate the speed according to the camera burst rate
         speed = self.base / self.burst_period  # mm/s
@@ -155,11 +156,12 @@ class ReliefShooter(object):
         time.sleep(2)
         os.kill(p.pid, signal.SIGUSR2)
         os.kill(p.pid, signal.SIGUSR1)
-        time.sleep(2)
+        time.sleep(3)
 
         half_range = int((self.nb_points-1)*self.base/2.0 + margin)
         logger.info('move to %s mm' % half_range)
         self.move_to(half_range)
+
 
         # set the speed (in steps/s)
         self.cnc.speed = round(speed*self.resolution)
@@ -172,7 +174,7 @@ class ReliefShooter(object):
         self.move_to(-half_range, ramp=0)
 
         # return to zero
-        self.cnc.speed = 2000
+        self.cnc.speed = 2500
         self.move_to(0)
 
         p.wait()
@@ -181,6 +183,7 @@ class ReliefShooter(object):
     def slow(self):
         """shoot slowly according to the parameters
         """
+        subprocess.Popen(('killall', 'gphoto2'))
         self.cam_command = (
             'gphoto2',
             '--auto-detect',
