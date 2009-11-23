@@ -13,7 +13,7 @@ class ReliefShooter(object):
 
     base = 10.0 # distance between 2 images in mm
     nb_points = 8 # nb of stereoscopic images (8 for Alioscopy panel)
-    camdelay = 1.7 # delay (s) between the burst command and the 1st image
+    camdelay = 0.1 # delay (s) between the burst command and the 1st image
     # The Nikon D200 took 8 images (7 intervals) in 1.515s
     burst_period = 1.515/7 # delay between 2 images
     position = 0 # current position in mm
@@ -122,8 +122,12 @@ class ReliefShooter(object):
             '--set-config',
             '/main/capturesettings/capturemode=1',
             '--set-config',
+            '/main/capturesettings/burstnumber=1',
+            '--capture-image',
+            '--set-config',
             '/main/capturesettings/burstnumber=%s' % self.nb_points,
-            '--capture-image')
+            '--capture-image',
+            '-I', '-1')
 
         logger.info(u'base = %s' % self.base)
 
@@ -142,8 +146,18 @@ class ReliefShooter(object):
         margin = speed * self.camdelay
         logger.info(u'margin = %s' % margin)
 
-        # move to the left point + the margin
-        half_range = int((self.nb_points-1)*self.base/2.0 + margin + 10)
+        # take a first photo and move to the left point + the margin
+        logger.info('Launch gphoto...')
+        p = subprocess.Popen(self.cam_command)
+
+
+        # signal that the next photo is the last one
+        time.sleep(2)
+        os.kill(p.pid, signal.SIGUSR2)
+        os.kill(p.pid, signal.SIGUSR1)
+        time.sleep(2)
+
+        half_range = int((self.nb_points-1)*self.base/2.0 + margin)
         logger.info('move to %s mm' % half_range)
         self.move_to(half_range)
 
@@ -153,13 +167,15 @@ class ReliefShooter(object):
         logger.info('Ok, ready to shoot')
         # launch the shooting and the main const move
         logger.info('move to -%s mm' % half_range)
-        p = subprocess.Popen(self.cam_command)
+        os.kill(p.pid, signal.SIGUSR2)
+        os.kill(p.pid, signal.SIGUSR1)
         self.move_to(-half_range, ramp=0)
 
         # return to zero
         self.cnc.speed = 2000
         self.move_to(0)
 
+        p.wait()
         logger.info(u'finished!')
 
     def slow(self):

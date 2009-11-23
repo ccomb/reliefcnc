@@ -42,25 +42,23 @@ def main():
 
     if options.burst is not None:
         shooter = ReliefShooter(debug=debug,
-                                resolution=100.0/3,
+                                resolution=26.7,
                                 maxrange=360)
         if options.base:
             shooter.base = options.base
         if options.points:
             shooter.nb_points = options.points
-        shooter.camdelay = 0.8
         shooter.burst()
         sys.exit()
 
     if options.slow is not None:
         shooter = ReliefShooter(debug=debug,
-                                resolution=100.0/3,
+                                resolution=26.7,
                                 maxrange=360)
         if options.base:
             shooter.base = options.base
         if options.points:
             shooter.nb_points = options.points
-        shooter.camdelay = 0.8
         shooter.slow()
         sys.exit()
 

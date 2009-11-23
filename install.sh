@@ -98,11 +98,20 @@ cd libgphoto2-2.4.7
 make
 sudo checkinstall --fstrans=no --install=yes --pkgname=libgphoto2 --pkgversion "2.4.7-relief1" --default
 
-# gphoto
+# gphoto2
 cd
 wget http://downloads.sourceforge.net/project/gphoto/gphoto/2.4.7/gphoto2-2.4.7.tar.bz2?use_mirror=freefr
 tar xjf gphoto2-2.4.7.tar.bz2
 cd gphoto2-2.4.7
+# patch
+cat > /tmp/patch << EOF
+632a633
+>   if (glob_interval != -1 || frames != 1) {
+706a708
+>    }
+EOF
+patch -p0 gphoto2/main.c < /tmp/patch
+rm /tmp/patch
 ./configure
 make
 sudo checkinstall --fstrans=no --install=yes --pkgname=gphoto2 --pkgversion "2.4.7-relief1" --default
