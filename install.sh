@@ -170,9 +170,16 @@ sudo mv /tmp/relief /etc/NetworkManager/system-connections/relief
 
 # net config
 macaddr=`/sbin/ifconfig eth2|grep HW|awk '{print $5}'`
-
 sudo sed -i "/^no-auto-default=/d" /etc/NetworkManager/nm-system-settings.conf
 sudo sed -i "/^\[main\].*/ano-auto-default=$macaddr," /etc/NetworkManager/nm-system-settings.conf
 
+cat > /tmp/interfaces << EOF
+auto lo eth2
+iface lo inet loopback
 
-
+iface eth2 inet static
+address 10.0.0.1
+netmask 255.255.255.0
+gateway 10.0.0.1
+EOF
+sudo mv /tmp/interfaces /etc/network/interfaces
