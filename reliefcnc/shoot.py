@@ -19,13 +19,18 @@ class ReliefShooter(object):
     position = 0 # current position in mm
     resolution = None # each move will be multiplied by the resolution
     maxrange = None
+    speed = None
 
-    def __init__(self, debug=False, resolution=None, maxrange=None):
+    def __init__(self, maxrange, resolution=None, speed=None, debug=False):
         self.on()
         self.resolution = resolution
         self.maxrange = maxrange
+        self.debug = debug
+        assert(self.resolution != 0)
+        self.speed = speed or int(800 / (self.resolution or 1)) # arbitrary default speed
+        logger.debug('speed=%s' % self.speed)
 
-    def calibrate(self, steps=None, distance=None, restart=False):
+    def calibrate(self, steps=None, distance=None, restart=False, gotozero=False):
         """This method allows to define the resolution and the max range.
         The resolution is the conversion between our unit and the motor steps.
         The max range is the rail length, expressed in our unit.
@@ -51,7 +56,10 @@ class ReliefShooter(object):
 
         if self.maxrange is None and self.resolution is None:
             logger.info('1st step of resolution calibration. Moving to zero.')
-            self.cnc.x = None
+            if gotozero:
+                self.cnc.x = None
+            else: # the tournette doesn't have a home sensor
+                self.cnc.x = 0
             self.resolution = 'step1'
             logger.info('Now rerun with steps=<your chosen amount>, until you reach the max range')
             return
@@ -61,7 +69,7 @@ class ReliefShooter(object):
                 logger.warning('You should now provide a number of steps')
                 return
             logger.info('2nd step of resolution calibration. Moving to step %s.' % steps)
-            self.cnc.move(x=steps)
+            self.cnc.move(x=steps, ramp=0)
             self.maxrange = steps
             logger.info('Now rerun with distance=<the mesured distance>')
             return
@@ -76,40 +84,65 @@ class ReliefShooter(object):
             logger.info('Calibration finished:\nresolution: 1 unit = %s steps\nmaxrange = %s units'
                         % (self.resolution, self.maxrange))
             self.cnc.move(x=0)
+            return self.resolution
 
 
     def on(self):
         """switch on the controller
         """
-        self.cnc = InterpCNC(speed=800)
+        self.cnc = InterpCNC(speed=self.speed)
 
     def off(self):
         """switch off the controller
         """
         self.cnc.disconnect()
 
-    def move_to(self, position, ramp=1):
+    def move_to(self, position, ramp=1, speed=None, duration=None):
         """Move to specified position in mm using a ramp
         """
+        # speed or duration, but not both
+        if speed is not None:
+            assert(duration is None)
+        else:
+            assert(duration is not None)
+            speed = (position-self.cnc.x)/duration
+
         position = position*self.resolution
         if position > self.maxrange*self.resolution:
             logger.error("just don't do that")
             return
         self.position = position
+        self.cnc.speed = speed * self.resolution
         self.cnc.move(x=position, ramp=ramp)
         self.cnc.wait()
+        # restore the default speed
+        self.cnc.speed = self.speed
 
-    def move_by(self, distance, ramp=1):
+    def move_by(self, distance, ramp=1, speed=None, duration=None):
         """Move the camera by the specified distance in mm
         """
+        # speed or duration, but not both
+        if speed is not None:
+            assert(duration is None)
+        else:
+            if duration is not None:
+                # compute the speed based on the duration
+                speed = distance/duration
+            else:
+                # fail back on the default speed
+                speed = self.speed
+
         steps_to_move = distance*self.resolution
         current_position = self.cnc.x
         new_position = current_position + steps_to_move
         if new_position > self.maxrange*self.resolution:
-            logger.error("just don't do that")
+            logger.error("The wanted position is outside the max range")
             return
+        self.cnc.speed = speed * self.resolution
         self.cnc.move(x=new_position, ramp=ramp)
         self.cnc.wait()
+        # restore the default speed
+        self.cnc.speed = self.speed
 
     def burst(self):
         """shoot according to the parameters
@@ -137,7 +170,7 @@ class ReliefShooter(object):
 
         assert(self.nb_points > 0)
 
-        self.cnc.speed = 2500
+        self.cnc.speed = self.speed
 
         # calculate the speed according to the camera burst rate
         speed = self.base / self.burst_period  # mm/s
@@ -174,7 +207,7 @@ class ReliefShooter(object):
         self.move_to(-half_range, ramp=0)
 
         # return to zero
-        self.cnc.speed = 2500
+        self.cnc.speed = self.speed
         self.move_to(0)
 
         p.wait()
@@ -199,7 +232,7 @@ class ReliefShooter(object):
 
         assert(self.nb_points > 0)
         # set the speed
-        self.cnc.speed = 2500
+        self.cnc.speed = self.speed
 
         # move to the left point
         half_range = int((self.nb_points-1)*self.base/2.0)
@@ -221,7 +254,7 @@ class ReliefShooter(object):
             p.wait()
 
         # return to zero
-        self.cnc.speed=2500
+        self.cnc.speed=self.speed
         self.move_to(0)
 
         logger.info(u'finished!')
@@ -234,7 +267,7 @@ class ReliefShooter(object):
 
         assert(self.nb_points > 0)
         # set the speed
-        self.cnc.speed = 2500
+        self.cnc.speed = self.speed
 
         # move to the left point
         half_range = int((self.nb_points-1)*self.base/2.0)
@@ -253,8 +286,9 @@ class ReliefShooter(object):
             time.sleep(2)
 
         # return to zero
-        self.cnc.speed=2500
+        self.cnc.speed=self.speed
         self.move_to(0)
 
         logger.info(u'finished!')
+
 
