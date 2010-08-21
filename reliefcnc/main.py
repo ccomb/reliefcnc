@@ -14,6 +14,7 @@ def main():
     parser.add_option('', '--slow', nargs=0, help=u'shoot sequence with stops')
     parser.add_option('-b', '--base', type='int', nargs=1, help=u'distance between shoots')
     parser.add_option('-r', '--resolution', type='int', nargs=1, help=u'nb of steps per unit (actually *your* unit)')
+    parser.add_option('-M', '--maxrange', type='int', nargs=1, help=u'maximum moving range in your unit)')
     parser.add_option('-d', '--duration', type='float', nargs=1, help=u'total duration in seconds')
     parser.add_option('-s', '--speed', type='float', nargs=1, help=u'wanted speed')
     parser.add_option('-p', '--points', type='int', nargs=1, help=u'nb of points')
@@ -39,7 +40,9 @@ def main():
         while has_sensor not in ('y', 'n'):
             has_sensor = raw_input(u'Do you have a home sensor? (y/n) : ')
         print('Moving to the origin point...')
-        if has_sensor == 'n':
+        if has_sensor == 'y':
+            shooter.cnc.x = None
+        else:
             while True:
                 move = raw_input((u"Please enter a positive or negative number until you reach the origin.\n"
                                   u"When you are satisfied with the position, hit Enter\n\n"
@@ -49,23 +52,27 @@ def main():
                 else:
                     shooter.maxrange = sys.maxint
                     shooter.move_by(int(move), ramp=0)
-        # first run
-        shooter.calibrate(gotozero=True if has_sensor=='y' else False)
+            shooter.cnc.x = 0
         # try to reach the maxrange manually
-        maxsteps = 0
         while True:
             value = raw_input((u'\nWe are now at position %s.\n'
-               u'Please enter a different number > 0, until you reach the maximum range.\n'
+               u'Please enter a different number (+/-), until you reach the maximum range.\n'
                u'When you are at the maximum range, simply hit the Enter key.\n\n'
-               u'New position you want to move (motor steps) = ') % maxsteps)
+               u'Number of motor steps to move = ') % shooter.cnc.x)
             if value == '':
                 break
-            maxsteps = int(value)
-            shooter.calibrate(steps=maxsteps)
+            try:
+                value = int(value)
+            except:
+                continue
+            shooter.move_by(value, ramp=0)
 
         # compute the resolution
-        maxrange = raw_input(u"Now please give the corresponding distance in your unit :")
-        resolution = shooter.calibrate(distance=maxrange)
+        distance = raw_input(u"Now please give the corresponding distance in your unit :")
+        limit = 'y' == raw_input(u"Do you want to limit the moves to this range ? (y/n): ")
+        resolution = shooter.calibrate(steps=shooter.cnc.x,
+                                       distance=distance,
+                                       limit=limit)
         print "The resolution is %s (steps/unit)" % resolution
         sys.exit()
 

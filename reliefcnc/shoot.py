@@ -1,8 +1,7 @@
 # coding: utf-8
 import subprocess
-import time
+import time, sys, os
 from pycnic.soprolec import InterpCNC
-import os
 import signal
 import logging
 
@@ -18,74 +17,30 @@ class ReliefShooter(object):
     burst_period = 1.515/7 # delay between 2 images
     position = 0 # current position in mm
     resolution = None # each move will be multiplied by the resolution
-    maxrange = None
+    maxrange = None # the max range in our unit
     speed = None
 
-    def __init__(self, maxrange, resolution=None, speed=None, debug=False):
+    def __init__(self, maxrange, resolution=1, speed=None, debug=False):
         self.on()
         self.resolution = resolution
         self.maxrange = maxrange
         self.debug = debug
-        assert(self.resolution != 0)
+        if not self.resolution:
+            self.resolution = 1
         self.speed = speed or int(800 / (self.resolution or 1)) # arbitrary default speed
         logger.debug('speed=%s' % self.speed)
 
-    def calibrate(self, steps=None, distance=None, restart=False, gotozero=False):
-        """This method allows to define the resolution and the max range.
-        The resolution is the conversion between our unit and the motor steps.
-        The max range is the rail length, expressed in our unit.
-        You have to run it three times :
-        - run it once to move to the zero
-        - run several times by providing a steps argument until the maximum
-          distance is reached.
-          Then measure the new position in mm or in your own unit.
-        - run it a third time by providing the measured distance.
-        - That's it. Now you can use the ReliefShooter with your own units.
-        - if you want to restart the calibration, run it with 'restart=True'
+    def calibrate(self, steps=None, distance=None, limit=True):
+        """compute and store the resolution,
+        given a distance and a number of steps
+        If limit = False, the maxrange is infinite. (tournette)
+        If limit = True, the given distance is the maxrange.
         """
-        if restart:
-            self.resolution = None
-            self.maxrange = None
-
-        if self.maxrange is not None and self.resolution not in (None, 'step1'):
-            logger.info('Calibration is already done. run with restart=True to restart it')
-            logger.info('resolution: 1 unit = %s steps\nmaxrange = %s units'
-                        % (self.resolution, self.maxrange))
-
-            return
-
-        if self.maxrange is None and self.resolution is None:
-            logger.info('1st step of resolution calibration. Moving to zero.')
-            if gotozero:
-                self.cnc.x = None
-            else: # the tournette doesn't have a home sensor
-                self.cnc.x = 0
-            self.resolution = 'step1'
-            logger.info('Now rerun with steps=<your chosen amount>, until you reach the max range')
-            return
-
-        if self.resolution == 'step1' and distance is None:
-            if steps == None:
-                logger.warning('You should now provide a number of steps')
-                return
-            logger.info('2nd step of resolution calibration. Moving to step %s.' % steps)
-            self.cnc.move(x=steps, ramp=0)
-            self.maxrange = steps
-            logger.info('Now rerun with distance=<the mesured distance>')
-            return
-
-        if type(self.maxrange) == int:
-            logger.info('3rd step of resolution calibration. Computing resolution.')
-            if distance == None:
-                logger.warning('You should now provide a distance')
-                return
-            self.resolution = float(self.maxrange)/float(distance)
-            self.maxrange = self.maxrange / self.resolution
-            logger.info('Calibration finished:\nresolution: 1 unit = %s steps\nmaxrange = %s units'
-                        % (self.resolution, self.maxrange))
-            self.cnc.move(x=0)
-            return self.resolution
-
+        self.resolution = float(steps)/float(distance)
+        self.maxrange = None
+        if limit:
+            self.maxrange = distance / self.resolution
+        return self.resolution
 
     def on(self):
         """switch on the controller
@@ -104,11 +59,13 @@ class ReliefShooter(object):
         if speed is not None:
             assert(duration is None)
         else:
-            assert(duration is not None)
-            speed = (position-self.cnc.x)/duration
+            if duration is None:
+                speed = self.speed
+            else:
+                speed = (position-self.cnc.x)/duration
 
         position = position*self.resolution
-        if position > self.maxrange*self.resolution:
+        if self.maxrange is not None and position > self.maxrange*self.resolution:
             logger.error("just don't do that")
             return
         self.position = position
@@ -135,7 +92,7 @@ class ReliefShooter(object):
         steps_to_move = distance*self.resolution
         current_position = self.cnc.x
         new_position = current_position + steps_to_move
-        if new_position > self.maxrange*self.resolution:
+        if self.maxrange is not None and new_position > self.maxrange*self.resolution:
             logger.error("The wanted position is outside the max range")
             return
         self.cnc.speed = speed * self.resolution
@@ -290,5 +247,13 @@ class ReliefShooter(object):
         self.move_to(0)
 
         logger.info(u'finished!')
+
+
+
+
+
+
+
+
 
 
