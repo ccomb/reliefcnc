@@ -91,7 +91,7 @@ class ReliefShooter(object):
         else:
             if duration is not None:
                 # compute the speed based on the duration
-                speed = distance/duration
+                speed = abs(distance)/duration
             else:
                 # fail back on the default speed
                 speed = self.speed
