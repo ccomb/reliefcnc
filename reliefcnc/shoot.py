@@ -41,7 +41,7 @@ class ReliefShooter(object):
         self.resolution = float(steps)/float(distance)
         self.maxrange = None
         if limit:
-            self.maxrange = distance / self.resolution
+            self.maxrange = float(distance) / self.resolution
         return self.resolution
 
     def on(self):
