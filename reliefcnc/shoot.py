@@ -20,9 +20,11 @@ class ReliefShooter(object):
     maxrange = None # the max range in our unit
     speed = None
 
-    def __init__(self, maxrange, resolution=1, speed=None, debug=False):
+    def __init__(self, maxrange=None, resolution=1, speed=None, debug=False):
         self.on()
         self.resolution = resolution
+        if resolution == 1:
+            logger.info('You did not provide a resolution! Use --calibrate to know it')
         self.maxrange = maxrange
         self.debug = debug
         if not self.resolution:
@@ -52,6 +54,11 @@ class ReliefShooter(object):
         """
         self.cnc.disconnect()
 
+    def reset(self):
+        """reset all axis
+        """
+        self.cnc.reset_all_axis()
+
     def move_to(self, position, ramp=1, speed=None, duration=None):
         """Move to specified position in mm using a ramp
         """
@@ -66,8 +73,8 @@ class ReliefShooter(object):
 
         position = position*self.resolution
         if self.maxrange is not None and position > self.maxrange*self.resolution:
-            logger.error("just don't do that")
-            return
+            logger.error("The wanted position is outside the max range")
+            exit(2)
         self.position = position
         self.cnc.speed = speed * self.resolution
         self.cnc.move(x=position, ramp=ramp)
@@ -94,7 +101,7 @@ class ReliefShooter(object):
         new_position = current_position + steps_to_move
         if self.maxrange is not None and new_position > self.maxrange*self.resolution:
             logger.error("The wanted position is outside the max range")
-            return
+            exit(2)
         self.cnc.speed = speed * self.resolution
         self.cnc.move(x=new_position, ramp=ramp)
         self.cnc.wait()
@@ -215,7 +222,6 @@ class ReliefShooter(object):
         self.move_to(0)
 
         logger.info(u'finished!')
-
 
     def manual(self):
         """shoot slowly and just wait between photos
