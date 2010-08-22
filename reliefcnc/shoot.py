@@ -38,11 +38,14 @@ class ReliefShooter(object):
         If limit = False, the maxrange is infinite. (tournette)
         If limit = True, the given distance is the maxrange.
         """
-        self.resolution = float(steps)/float(distance)
-        self.maxrange = None
-        if limit:
-            self.maxrange = float(distance) / self.resolution
-        return self.resolution
+        try:
+            self.resolution = float(steps)/float(distance)
+            self.maxrange = None
+            if limit:
+                self.maxrange = float(distance) / self.resolution
+            return self.resolution
+        except:
+            self.resolution = 1
 
     def on(self):
         """switch on the controller
@@ -73,8 +76,7 @@ class ReliefShooter(object):
 
         position = position*self.resolution
         if self.maxrange is not None and position > self.maxrange*self.resolution:
-            logger.error("The wanted position is outside the max range")
-            exit(2)
+            raise ValueError("The wanted position is outside the max range")
         self.position = position
         self.cnc.speed = speed * self.resolution
         self.cnc.move(x=position, ramp=ramp)
@@ -100,8 +102,7 @@ class ReliefShooter(object):
         current_position = self.cnc.x
         new_position = current_position + steps_to_move
         if self.maxrange is not None and new_position > self.maxrange*self.resolution:
-            logger.error("The wanted position is outside the max range")
-            exit(2)
+            raise ValueError("The wanted position is outside the max range")
         self.cnc.speed = speed * self.resolution
         self.cnc.move(x=new_position, ramp=ramp)
         self.cnc.wait()
