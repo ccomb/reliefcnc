@@ -72,7 +72,7 @@ class ReliefShooter(object):
             if duration is None:
                 speed = self.speed
             else:
-                speed = (position-self.cnc.x)/duration
+                speed = abs(position-self.cnc.x/self.resolution)/duration
 
         position = position*self.resolution
         if self.maxrange is not None and position > self.maxrange*self.resolution:
