@@ -15,24 +15,26 @@ class ReliefShooter(object):
     camdelay = 0.135 # delay (s) between the burst command and the 1st image
     # The Nikon D200 took 8 images (7 intervals) in 1.515s
     burst_period = 1.515/7 # delay between 2 images
-    position = 0 # current position in mm
+    position = 0 # current position in our unit
     resolution = None # each move will be multiplied by the resolution
     maxrange = None # the max range in our unit
-    speed = None
+    speed = None # speed in our unit/s
 
-    def __init__(self, maxrange=None, resolution=1, speed=None, debug=False):
+    def __init__(self, maxrange=None, resolution=1.0, speed=None, debug=False):
         self.on()
-        self.resolution = resolution
+        self.resolution = float(resolution)
+        self.position = float(self.cnc.x) / self.resolution
         if resolution == 1:
             logger.info('You did not provide a resolution! Use --calibrate to know it')
         self.maxrange = maxrange
         self.debug = debug
         if not self.resolution:
-            self.resolution = 1
-        self.speed = speed or int(800 / (self.resolution or 1)) # arbitrary default speed
+            self.resolution = 1.0
+        self.speed = (speed or 0)/self.resolution or int(800 / (self.resolution or 1)) # arbitrary default speed
+        self.cnc.speed = round(self.speed*self.resolution)
         logger.debug('speed=%s' % self.speed)
 
-    def calibrate(self, steps=None, distance=None, limit=True):
+    def calibrate(self, steps=None, distance=None, limit=False):
         """compute and store the resolution,
         given a distance and a number of steps
         If limit = False, the maxrange is infinite. (tournette)
@@ -40,12 +42,13 @@ class ReliefShooter(object):
         """
         try:
             self.resolution = float(steps)/float(distance)
-            self.maxrange = None
-            if limit:
-                self.maxrange = float(distance) / self.resolution
-            return self.resolution
         except:
-            self.resolution = 1
+            self.resolution = 1.0
+        self.maxrange = None
+        if limit:
+            self.maxrange = float(distance)
+        self.position = float(self.cnc.x) / self.resolution
+        return self.resolution
 
     def on(self):
         """switch on the controller
@@ -63,7 +66,7 @@ class ReliefShooter(object):
         self.cnc.reset_all_axis()
 
     def move_to(self, position, ramp=1, speed=None, duration=None):
-        """Move to specified position in mm using a ramp
+        """Move to specified position in our unit using a ramp
         """
         # speed or duration, but not both
         if speed is not None:
@@ -72,17 +75,18 @@ class ReliefShooter(object):
             if duration is None:
                 speed = self.speed
             else:
-                speed = abs(position-self.cnc.x/self.resolution)/duration
+                speed = abs(position - (float(self.cnc.x) / self.resolution)) / duration
 
-        position = position*self.resolution
-        if self.maxrange is not None and position > self.maxrange*self.resolution:
+        if (self.maxrange is not None
+            and (position > self.maxrange or position < 0)
+        ):
             raise ValueError("The wanted position is outside the max range")
-        self.position = position
-        self.cnc.speed = speed * self.resolution
-        self.cnc.move(x=position, ramp=ramp)
+        self.cnc.speed = round(speed * self.resolution)
+        self.cnc.move(x=position*self.resolution, ramp=ramp)
         self.cnc.wait()
+        self.position = float(self.cnc.x) / self.resolution
         # restore the default speed
-        self.cnc.speed = self.speed
+        self.cnc.speed = round(self.speed * self.resolution)
 
     def move_by(self, distance, ramp=1, speed=None, duration=None):
         """Move the camera by the specified distance in mm
@@ -99,15 +103,18 @@ class ReliefShooter(object):
                 speed = self.speed
 
         steps_to_move = distance*self.resolution
-        current_position = self.cnc.x
-        new_position = current_position + steps_to_move
-        if self.maxrange is not None and new_position > self.maxrange*self.resolution:
+        new_motor_position = self.cnc.x + steps_to_move
+        if (self.maxrange is not None
+            and (new_motor_position > self.maxrange*self.resolution
+                 or new_motor_position < 0)
+        ):
             raise ValueError("The wanted position is outside the max range")
-        self.cnc.speed = speed * self.resolution
-        self.cnc.move(x=new_position, ramp=ramp)
+        self.cnc.speed = round(speed * self.resolution)
+        self.cnc.move(x=round(new_motor_position), ramp=ramp)
         self.cnc.wait()
+        self.position = float(self.cnc.x) / self.resolution
         # restore the default speed
-        self.cnc.speed = self.speed
+        self.cnc.speed = round(self.speed * self.resolution)
 
     def burst(self):
         """shoot according to the parameters
