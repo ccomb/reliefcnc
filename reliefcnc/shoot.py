@@ -18,6 +18,7 @@ class ReliefShooter(object):
     position = 0 # current position in our unit
     resolution = None # each move will be multiplied by the resolution
     maxrange = None # the max range in our unit
+    _calibrated = False
     speed = None # speed in our unit/s
 
     def __init__(self, maxrange=None, resolution=1.0, speed=None, debug=False):
@@ -40,6 +41,7 @@ class ReliefShooter(object):
         If limit = False, the maxrange is infinite. (tournette)
         If limit = True, the given distance is the maxrange.
         """
+        assert(not self._calibrated)
         try:
             self.resolution = float(steps)/float(distance)
         except:
@@ -48,6 +50,8 @@ class ReliefShooter(object):
         if limit:
             self.maxrange = float(distance)
         self.position = float(self.cnc.x) / self.resolution
+        self.speed = self.speed / self.resolution
+        self._calibrated = True
         return self.resolution
 
     def on(self):
