@@ -86,6 +86,7 @@ class ReliefShooter(object):
         ):
             raise ValueError("The wanted position is outside the max range")
         self.cnc.speed = round(speed * self.resolution)
+        logger.info(u'moving to %s' % position)
         self.cnc.move(x=position*self.resolution, ramp=ramp)
         self.cnc.wait()
         self.position = float(self.cnc.x) / self.resolution
@@ -114,6 +115,7 @@ class ReliefShooter(object):
         ):
             raise ValueError("The wanted position is outside the max range")
         self.cnc.speed = round(speed * self.resolution)
+        logger.info(u'moving by %s' % distance)
         self.cnc.move(x=round(new_motor_position), ramp=ramp)
         self.cnc.wait()
         self.position = float(self.cnc.x) / self.resolution
@@ -148,7 +150,7 @@ class ReliefShooter(object):
         self.cnc.speed = self.speed
 
         # store initial position
-        zero = self.cnc.x
+        zero = self.position
 
         # calculate the speed according to the camera burst rate
         speed = self.base / self.burst_period  # mm/s
@@ -162,27 +164,23 @@ class ReliefShooter(object):
         logger.info('Launch gphoto...')
         p = subprocess.Popen(self.cam_command)
 
-
         # signal that the next photo is the last one
         time.sleep(2)
         os.kill(p.pid, signal.SIGUSR2)
         os.kill(p.pid, signal.SIGUSR1)
         time.sleep(3)
 
-        half_range = int((self.nb_points-1)*self.base/2.0 + margin)
-        logger.info('move to %s mm' % half_range)
-        self.move_to(half_range)
-
+        half_range = (self.nb_points-1)*self.base/2.0 + margin
+        self.move_by(half_range)
 
         # set the speed (in steps/s)
         self.cnc.speed = round(speed*self.resolution)
 
         logger.info('Ok, ready to shoot')
         # launch the shooting and the main const move
-        logger.info('move to -%s mm' % half_range)
         os.kill(p.pid, signal.SIGUSR2)
         os.kill(p.pid, signal.SIGUSR1)
-        self.move_to(-half_range, ramp=0)
+        self.move_by(-half_range, ramp=0)
 
         # return to zero
         self.cnc.speed = self.speed
@@ -205,14 +203,13 @@ class ReliefShooter(object):
 
         assert(self.nb_points > 0)
         # set the speed
-        self.cnc.speed = self.speed
+        self.cnc.speed = round(self.speed * self.resolution)
 
         # store initial position
-        zero = self.cnc.x
+        zero = self.position
 
         # move to the left point
-        half_range = int((self.nb_points-1)*self.base/2.0)
-        logger.info('move to %s' % half_range)
+        half_range = (self.nb_points-1)*self.base/2.0
         self.move_by(half_range)
 
         # shoot the first image and let gphoto wait
@@ -222,7 +219,6 @@ class ReliefShooter(object):
         # loop over each stop point
         for i in range(self.nb_points-1):
             # move to the next point
-            logger.info(u'moving by %s' % -self.base)
             self.move_by(-self.base)
             #time.sleep(1)
             # shoot the next image
@@ -230,7 +226,7 @@ class ReliefShooter(object):
             p.wait()
 
         # return to zero
-        self.cnc.speed=self.speed
+        self.cnc.speed=round(self.speed * self.resolution)
         self.move_to(zero)
 
         logger.info(u'finished!')
@@ -242,14 +238,13 @@ class ReliefShooter(object):
 
         assert(self.nb_points > 0)
         # set the speed
-        self.cnc.speed = self.speed
+        self.cnc.speed=round(self.speed * self.resolution)
 
         # store initial position
-        zero = self.cnc.x
+        zero = self.position
 
         # move to the left point
-        half_range = int((self.nb_points-1)*self.base/2.0)
-        logger.info('move to %s' % half_range)
+        half_range = (self.nb_points-1)*self.base/2.0
         self.move_by(-half_range)
 
         # shoot the first image
@@ -258,13 +253,12 @@ class ReliefShooter(object):
         # loop over each stop point
         for i in range(self.nb_points-1):
             # move to the next point
-            logger.info(u'moving by %s' % -self.base)
             self.move_by(self.base)
             # shoot the next image
             time.sleep(2)
 
         # return to zero
-        self.cnc.speed=self.speed
+        self.cnc.speed=round(self.speed * self.resolution)
         self.move_to(zero)
 
         logger.info(u'finished!')
