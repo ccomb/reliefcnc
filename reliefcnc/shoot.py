@@ -134,8 +134,6 @@ class ReliefShooter(object):
             '--set-config',
             '/main/capturesettings/capturemode=1',
             '--set-config',
-            '/main/capturesettings/burstnumber=1',
-            '--set-config',
             '/main/capturesettings/burstnumber=%s' % self.nb_points,
             '--capture-image',
             '-I', '-1')
