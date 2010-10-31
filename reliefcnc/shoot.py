@@ -147,6 +147,9 @@ class ReliefShooter(object):
 
         self.cnc.speed = self.speed
 
+        # store initial position
+        zero = self.cnc.x
+
         # calculate the speed according to the camera burst rate
         speed = self.base / self.burst_period  # mm/s
         logger.info('speed = %s mm/s' % speed)
@@ -183,7 +186,7 @@ class ReliefShooter(object):
 
         # return to zero
         self.cnc.speed = self.speed
-        self.move_to(0)
+        self.move_to(zero)
 
         p.wait()
         logger.info(u'finished!')
@@ -204,6 +207,9 @@ class ReliefShooter(object):
         # set the speed
         self.cnc.speed = self.speed
 
+        # store initial position
+        zero = self.cnc.x
+
         # move to the left point
         half_range = int((self.nb_points-1)*self.base/2.0)
         logger.info('move to %s' % half_range)
@@ -218,14 +224,14 @@ class ReliefShooter(object):
             # move to the next point
             logger.info(u'moving by %s' % -self.base)
             self.move_by(-self.base)
-            time.sleep(1)
+            #time.sleep(1)
             # shoot the next image
             p = subprocess.Popen(self.cam_command, close_fds=True)
             p.wait()
 
         # return to zero
         self.cnc.speed=self.speed
-        self.move_to(0)
+        self.move_to(zero)
 
         logger.info(u'finished!')
 
@@ -237,6 +243,9 @@ class ReliefShooter(object):
         assert(self.nb_points > 0)
         # set the speed
         self.cnc.speed = self.speed
+
+        # store initial position
+        zero = self.cnc.x
 
         # move to the left point
         half_range = int((self.nb_points-1)*self.base/2.0)
@@ -256,7 +265,7 @@ class ReliefShooter(object):
 
         # return to zero
         self.cnc.speed=self.speed
-        self.move_to(0)
+        self.move_to(zero)
 
         logger.info(u'finished!')
 
