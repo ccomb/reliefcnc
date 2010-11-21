@@ -166,18 +166,15 @@ class ReliefShooter(object):
         half_range = (self.nb_points-1)*self.base/2.0 + margin
         self.move_by(half_range)
 
-        # set the speed (in steps/s)
-        self.cnc.speed = round(speed*self.resolution)
-
         logger.info('Ok, ready to shoot')
         if auto:
             # launch the shooting and the main const move
             os.kill(p.pid, signal.SIGUSR2)
             os.kill(p.pid, signal.SIGUSR1)
-        self.move_by(-2*half_range, ramp=0)
+        self.move_by(-2*half_range, speed=speed, ramp=0)
 
         # return to zero
-        self.cnc.speed = self.speed
+        self.cnc.speed = round(self.speed*self.resolution)
         self.move_to(zero)
 
         if auto:
