@@ -15,7 +15,8 @@ def main():
     parser.add_option('', '--manual', nargs=0, help=u'just move without shooting')
     parser.add_option('-b', '--base', type='float', nargs=1, help=u'distance between shoots')
     parser.add_option('-r', '--resolution', type='float', nargs=1, help=u'nb of steps per unit (actually *your* unit)')
-    parser.add_option('-M', '--maxrange', type='float', nargs=1, help=u'maximum moving range in your unit)')
+    parser.add_option('-L', '--left', type='float', nargs=1, help=u'the max left position in your unit)')
+    parser.add_option('-R', '--right', type='float', nargs=1, help=u'the max right position in your unit)')
     parser.add_option('-d', '--duration', type='float', nargs=1, help=u'total duration in seconds')
     parser.add_option('-s', '--speed', type='float', nargs=1, help=u'wanted speed')
     parser.add_option('-p', '--points', type='int', nargs=1, help=u'nb of points')
@@ -35,7 +36,7 @@ def main():
     # CALIBRATION
     if options.calibrate is not None:
         speed=options.speed or 2000
-        shooter = ReliefShooter(debug=debug, maxrange=None, speed=speed)
+        shooter = ReliefShooter(debug=debug, left_position=None, right_position=None, speed=speed)
 
         if len(parser.largs) == 3:
             # to be able to run tests without questions
@@ -57,10 +58,11 @@ def main():
                     if move == '':
                         break
                     else:
-                        shooter.maxrange = sys.maxint
+                        shooter.right_position = sys.maxint
+                        shooter.left_position = 0
                         shooter.move_by(int(move), ramp=0)
                 shooter.cnc.x = 0
-            # try to reach the maxrange manually
+            # try to reach the right position manually
             while True:
                 value = raw_input((u'\nWe are now at position %s.\n'
                    u'Please enter a different number (+/-), until you reach the maximum range.\n'
@@ -77,6 +79,7 @@ def main():
             # compute the resolution
             steps = shooter.cnc.x
             distance = raw_input(u"Now please give the corresponding distance in your unit :")
+            shooter.right_position = distance
             limit = 'y' == raw_input(u"Do you want to limit the moves to this range ? (y/n): ")
         resolution = shooter.calibrate(steps=steps,
                                        distance=distance,
@@ -94,7 +97,8 @@ def main():
 
         shooter = ReliefShooter(debug=debug,
                                 resolution=options.resolution,
-                                maxrange=options.maxrange)
+                                left_position=options.left_position,
+                                right_position=options.right_position)
         if options.move[0] in ('+', '-'):
             shooter.move_by(move,
                             speed=options.speed,
@@ -117,7 +121,8 @@ def main():
     if (options.burst, options.slow, options.manual) != (None, None, None):
         shooter = ReliefShooter(debug=debug,
                                 resolution=options.resolution,
-                                maxrange=options.maxrange,
+                                left_position=options.left_position,
+                                right_position=options.right_position,
                                 speed=options.speed)
         if options.base:
             shooter.base = options.base

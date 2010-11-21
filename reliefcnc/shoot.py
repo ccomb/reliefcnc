@@ -16,18 +16,15 @@ class ReliefShooter(object):
     # The Nikon D200 took 8 images (7 intervals) in 1.515s
     burst_period = 1.515/7 # delay between 2 images
     position = 0 # current position in our unit
-    resolution = None # each move will be multiplied by the resolution
-    maxrange = None # the max range in our unit
+    resolution = 1 # each move will be multiplied by the resolution
+    left = 0 # the left position in our unit
+    right = 1 # the right position in our unit
     _calibrated = False
     speed = None # speed in our unit/s
 
-    def __init__(self, maxrange=None, resolution=1.0, speed=None, debug=False):
+    def __init__(self, speed=None, debug=False):
         self.on()
-        self.resolution = float(resolution)
         self.position = float(self.cnc.x) / self.resolution
-        if resolution == 1:
-            logger.info('You did not provide a resolution! Use --calibrate to know it')
-        self.maxrange = maxrange
         self.debug = debug
         if not self.resolution:
             self.resolution = 1.0
@@ -35,20 +32,20 @@ class ReliefShooter(object):
         self.cnc.speed = round(self.speed*self.resolution)
         logger.debug('speed=%s' % self.speed)
 
-    def calibrate(self, steps=None, distance=None, limit=False):
+    def calibrate(self, left=0, right=1, distance=1, limit=False):
         """compute and store the resolution,
         given a distance and a number of steps
-        If limit = False, the maxrange is infinite. (tournette)
-        If limit = True, the given distance is the maxrange.
+        If limit = False, we allow to move outside the boundaries (tournette)
+        If limit = True, we constraint between left and right (rail)
         """
         assert(not self._calibrated)
         try:
-            self.resolution = float(steps)/float(distance)
+            self.resolution = (float(right)-float(left))/float(distance)
         except:
             self.resolution = 1.0
-        self.maxrange = None
-        if limit:
-            self.maxrange = float(distance)
+        self.left = float(left) / self.resolution
+        self.right = float(right) / self.resolution
+        self.limit = limit
         self.position = float(self.cnc.x) / self.resolution
         self.speed = self.speed / self.resolution
         self._calibrated = True
@@ -81,10 +78,8 @@ class ReliefShooter(object):
             else:
                 speed = abs(position - (float(self.cnc.x) / self.resolution)) / duration
 
-        if (self.maxrange is not None
-            and (position > self.maxrange or position < 0)
-        ):
-            raise ValueError("The wanted position is outside the max range")
+        if self.limit and (position > self.right or position < self.left):
+            raise ValueError("The wanted position is outside the limits")
         self.cnc.speed = round(speed * self.resolution)
         logger.info(u'moving to %s' % position)
         self.cnc.move(x=position*self.resolution, ramp=ramp)
@@ -109,10 +104,8 @@ class ReliefShooter(object):
 
         steps_to_move = distance*self.resolution
         new_motor_position = self.cnc.x + steps_to_move
-        if (self.maxrange is not None
-            and (new_motor_position > self.maxrange*self.resolution
-                 or new_motor_position < 0)
-        ):
+        if self.limit and (new_motor_position > self.right*self.resolution
+                        or new_motor_position < self.left*self.resolution):
             raise ValueError("The wanted position is outside the max range")
         self.cnc.speed = round(speed * self.resolution)
         logger.info(u'moving by %s' % distance)
@@ -122,26 +115,27 @@ class ReliefShooter(object):
         # restore the default speed
         self.cnc.speed = round(self.speed * self.resolution)
 
-    def burst(self):
+    def burst(self, auto=False):
         """shoot according to the parameters
         """
-        subprocess.Popen(('killall', 'gphoto2'))
-        self.cam_command = (
-            'gphoto2',
-            '--auto-detect',
-            '--set-config',
-            '/main/settings/capturetarget=1',
-            '--set-config',
-            '/main/capturesettings/capturemode=1',
-            '--set-config',
-            '/main/capturesettings/burstnumber=%s' % self.nb_points,
-            '--capture-image',
-            '-I', '-1')
+        if auto:
+            subprocess.Popen(('killall', 'gphoto2'))
+            self.cam_command = (
+                'gphoto2',
+                '--auto-detect',
+                '--set-config',
+                '/main/settings/capturetarget=1',
+                '--set-config',
+                '/main/capturesettings/capturemode=1',
+                '--set-config',
+                '/main/capturesettings/burstnumber=%s' % self.nb_points,
+                '--capture-image',
+                '-I', '-1')
 
         logger.info(u'base = %s' % self.base)
 
         # assume we are in the middle of the rail
-        self.cnc.x = 0
+        #self.cnc.x = 0
 
         assert(self.nb_points > 0)
 
@@ -159,14 +153,15 @@ class ReliefShooter(object):
         logger.info(u'margin = %s' % margin)
 
         # take a first photo and move to the left point + the margin
-        logger.info('Launch gphoto...')
-        p = subprocess.Popen(self.cam_command)
+        if auto:
+            logger.info('Launch gphoto...')
+            p = subprocess.Popen(self.cam_command)
 
-        # signal that the next photo is the last one
-        time.sleep(2)
-        os.kill(p.pid, signal.SIGUSR2)
-        os.kill(p.pid, signal.SIGUSR1)
-        time.sleep(3)
+            # signal that the next photo is the last one
+            time.sleep(2)
+            os.kill(p.pid, signal.SIGUSR2)
+            os.kill(p.pid, signal.SIGUSR1)
+            time.sleep(3)
 
         half_range = (self.nb_points-1)*self.base/2.0 + margin
         self.move_by(half_range)
@@ -175,27 +170,30 @@ class ReliefShooter(object):
         self.cnc.speed = round(speed*self.resolution)
 
         logger.info('Ok, ready to shoot')
-        # launch the shooting and the main const move
-        os.kill(p.pid, signal.SIGUSR2)
-        os.kill(p.pid, signal.SIGUSR1)
-        self.move_by(-half_range, ramp=0)
+        if auto:
+            # launch the shooting and the main const move
+            os.kill(p.pid, signal.SIGUSR2)
+            os.kill(p.pid, signal.SIGUSR1)
+        self.move_by(-2*half_range, ramp=0)
 
         # return to zero
         self.cnc.speed = self.speed
         self.move_to(zero)
 
-        p.wait()
+        if auto:
+            p.wait()
         logger.info(u'finished!')
 
-    def slow(self):
+    def slow(self, auto=False, wait_time=1):
         """shoot slowly according to the parameters
         """
-        subprocess.Popen(('killall', 'gphoto2'))
-        self.cam_command = (
-            'gphoto2',
-            '--set-config',
-            '/main/settings/capturetarget=1',
-            '--capture-image')
+        if auto:
+            subprocess.Popen(('killall', 'gphoto2'))
+            self.cam_command = (
+                'gphoto2',
+                '--set-config',
+                '/main/settings/capturetarget=1',
+                '--capture-image')
 
         logger.info(u'base = %s' % self.base)
 
@@ -211,8 +209,11 @@ class ReliefShooter(object):
         self.move_by(half_range)
 
         # shoot the first image and let gphoto wait
-        p = subprocess.Popen(self.cam_command, close_fds=True)
-        p.wait()
+        if auto:
+            p = subprocess.Popen(self.cam_command, close_fds=True)
+            p.wait()
+        else:
+            time.sleep(wait_time)
 
         # loop over each stop point
         for i in range(self.nb_points-1):
@@ -220,48 +221,17 @@ class ReliefShooter(object):
             self.move_by(-self.base)
             #time.sleep(1)
             # shoot the next image
-            p = subprocess.Popen(self.cam_command, close_fds=True)
-            p.wait()
+            if auto:
+                p = subprocess.Popen(self.cam_command, close_fds=True)
+                p.wait()
+            else:
+                time.sleep(wait_time)
 
         # return to zero
         self.cnc.speed=round(self.speed * self.resolution)
         self.move_to(zero)
 
         logger.info(u'finished!')
-
-    def manual(self):
-        """shoot slowly and just wait between photos
-        """
-        logger.info(u'base = %s' % self.base)
-
-        assert(self.nb_points > 0)
-        # set the speed
-        self.cnc.speed=round(self.speed * self.resolution)
-
-        # store initial position
-        zero = self.position
-
-        # move to the left point
-        half_range = (self.nb_points-1)*self.base/2.0
-        self.move_by(-half_range)
-
-        # shoot the first image
-        time.sleep(2)
-
-        # loop over each stop point
-        for i in range(self.nb_points-1):
-            # move to the next point
-            self.move_by(self.base)
-            # shoot the next image
-            time.sleep(2)
-
-        # return to zero
-        self.cnc.speed=round(self.speed * self.resolution)
-        self.move_to(zero)
-
-        logger.info(u'finished!')
-
-
 
 
 
