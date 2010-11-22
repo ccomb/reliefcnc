@@ -32,7 +32,7 @@ class ReliefShooter(object):
         self.cnc.speed = round(self.speed*self.resolution)
         logger.debug('speed=%s' % self.speed)
 
-    def calibrate(self, left=0, right=1, distance=1, limit=False):
+    def calibrate(self, left=0, right=1, distance=1, limit=False, **kw):
         """compute and store the resolution,
         given a distance and a number of steps
         If limit = False, we allow to move outside the boundaries (tournette)
