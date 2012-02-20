@@ -71,9 +71,9 @@ EOF
 cd
 mkdir -p relief
 cd relief
-hg clone https://ccomb:antalya@cody.gorfou.fr/hg/pycnic
-hg clone https://ccomb:antalya@cody.gorfou.fr/hg-private/reliefcnc
-hg clone https://ccomb:antalya@cody.gorfou.fr/hg-private/reliefgui
+hg clone https://bitbucket.org/ccomb/pycnic
+hg clone https://bitbucket.org/ccomb/reliefcnc
+hg clone https://bitbucket.org/ccomb/reliefgui
 
 # pyusb
 wget -c http://downloads.sourceforge.net/project/pyusb/pyusb/0.4.2/pyusb-0.4.2.tar.gz?use_mirror=freefr
